@@ -19,94 +19,160 @@ import webapp2
 import cgi
 
 form="""
-<form method="post">
-    Your birthday?
-    <br>
-    <label> Month 
-        <input type="text" name="month" value="%(month)s">
-    </label>
-    <label> Day 
-        <input type="text" name="day" value="%(day)s">
-    </label>
-    <label> Year
-        <input type="text" name="year" value="%(year)s">
-    </label>
+<head>
+    <title>Sign Up</title>
+    <style type="text/css">
+      .label {text-align: right}
+      .error {color: red}
+    </style>
 
-    <div style="color:red">%(error)s</div>
-    <br>
-    <br>
-    <input type="submit">
-</form>
+  </head>
+
+  <body>
+    <h2>Signup</h2>
+    <form method="post">
+      <table>
+        <tbody><tr>
+          <td class="label">
+            Username
+          </td>
+          <td>
+            <input name="username" value="%(username)s" type="text">
+          </td>
+          <td class="error">
+            %(error_username)s
+          </td>
+        </tr>
+
+        <tr>
+          <td class="label">
+            Password
+          </td>
+          <td>
+            <input name="password" value="%(password)s" type="password">
+          </td>
+          <td class="error">
+            %(error_password)s
+          </td>
+        </tr>
+
+        <tr>
+          <td class="label">
+            Verify Password
+          </td>
+          <td>
+            <input name="verify" value="%(passverify)s" type="password">
+          </td>
+          <td class="error">
+            %(error_passverify)s
+          </td>
+        </tr>
+
+        <tr>
+          <td class="label">
+            Email (optional)
+          </td>
+          <td>
+            <input name="email" value="%(email)s" type="text">
+          </td>
+          <td class="error">
+            %(error_email)s
+          </td>
+        </tr>
+      </tbody></table>
+
+      <input type="submit">
+    </form>
+  
+
+</body>
+
 """
-
-months = ['January',
-        'February',
-        'March',
-        'April',
-        'May',
-        'June',
-        'July',
-        'August',
-        'September',
-        'October',
-        'November',
-        'December']
-
-month_abbvs = dict((m[:3].lower(),m) for m in months)
 
 def escape_html(s):
     return cgi.escape(s)
 
-def valid_month(month):
-    if month:
-        short_month = month[:3].lower()
-        return month_abbvs.get(short_month)
+import re
 
-def valid_day(day):
-    if day and day.isdigit():
-        d = int(day)
-        if 0 < d and d < 32:
-            return d
+USER_RE = re.compile(r"^[a-zA-Z0-9_-]{3,20}$")
+PASS_RE = re.compile("^.{3,20}$")
+EMAIL_RE = re.compile("^[\S]+@[\S]+\.[\S]+$")
 
-def valid_year(year):
-    if year and year.isdigit():
-        y = int(year)
-        if 1900 < y and y < 2020:
-            return y
+def valid_username(username):
+	return USER_RE.match(username)
 
+def valid_password(p):
+	return PASS_RE.match(p)
+
+def valid_email(email):
+    if email:
+        return EMAIL_RE.match(email)
+    else:
+        return True
 
 class MainPage(webapp2.RequestHandler):
-    def write_form(self, error="", month="", day="", year=""):
-        self.response.out.write(form % {"error": error,
-                                        "month": escape_html(month),
-                                        "day": escape_html(day),
-                                        "year": escape_html(year)})
+    def write_form(self,
+            username="",
+            error_username="",
+            password="",
+            passverify="",
+            error_password="",
+            error_passverify="",
+            email="",
+            error_email=""):
+
+        self.response.out.write(form % {
+            "username": username,
+            "error_username": error_username,
+            "password": password,
+            "passverify": passverify,
+            "error_password": error_password,
+            "error_passverify": error_passverify,
+            "email": email,
+            "error_email": error_email})
 
     def post(self):
-        usr_month = self.request.get("month")
-        usr_day = self.request.get("day")
-        usr_year = self.request.get("year")
+        usr_username = self.request.get("username")
+        usr_password = self.request.get("password")
+        usr_passverify = self.request.get("verify")
+        usr_email = self.request.get("email")
 
+        error_username = ""
+        error_password = ""
+        error_passverify = ""
+        error_email = ""
 
-        month = valid_month(usr_month)
-        day = valid_day(usr_day)
-        year = valid_year(usr_year)
+        if not valid_username(usr_username):
+            error_username = "invalid user name"
 
-        if not ( month and day and year ):
-            self.write_form("invalid",
-                usr_month,usr_day,usr_year)
+        if not usr_password == usr_passverify :
+            error_passverify = "not correspand"
+            usr_password = ""
+            usr_passverify = ""
+
+        elif not valid_password(usr_password):
+            error_password = "invalid password"
+            usr_password = ""
+            usr_passverify = ""
+
+        if not valid_email(usr_email):
+            error_email = "invalid email"
+
+        if ( error_username + error_password + error_passverify + error_email != "" ):
+            self.write_form(usr_username, error_username,
+				"", "", error_password, error_passverify,
+				usr_email, error_email)
         else:
-            self.redirect("/thanks")
+            self.redirect("/welcome?name=%s" % usr_username)
 
     def get(self):
         self.write_form()
 
-class ThanksHandler(webapp2.RequestHandler):
+class WelcomeHandler(webapp2.RequestHandler):
     def get(self):
-        self.response.out.write("Thanks! Valid")
-        
-
+	usr_username = self.request.get("name")
+        self.response.out.write("Welcome! %s" % usr_username)
 
 app = webapp2.WSGIApplication([	('/', MainPage),
-                                ('/thanks', ThanksHandler),],
-				 				debug=True)
+                                ('/welcome', WelcomeHandler),],
+                                debug=True)
