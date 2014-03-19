@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+{% autoescape true %}
+<html>
+    <head>
+        <link rel="stylesheet" type="text/css" href="css/index.css">
+    </head>
+  <body>
+    {% for post in posts %}
+      {% if post.title %}
+        <div class="title">
+            <b>{{ post.title }}</b> 
+        </div>
+      {% endif %}
+      {% if post.date %}
+        <div class="date">
+            <b>{{ post.date }}</b> 
+        </div>
+      {% endif %}
+      <br>
+      {% if post.content%}
+        <div class="content">
+            <b>{{ post.content }}</b> 
+        </div>
+      {% endif %}
+    <hr>
+    {% endfor %}
+
+    <form action="/newpost" method="post">
+      <div><textarea name="title" rows="1" cols="60"></textarea></div>
+      <div><textarea name="content" rows="3" cols="60"></textarea></div>
+      <div><input type="submit" value="Post"></div>
+    </form>
+
+  </body>
+</html>
+{% endautoescape %}
