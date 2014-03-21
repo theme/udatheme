@@ -7,11 +7,7 @@ threadsafe: yes
 handlers:
 - url: /css
   static_dir: css
-  application_readable: true
-- url: /temp
-  static_dir: temp
-  application_readable: true
-- url: /.*
+- url: /blog.*
   script: main.app
 
 libraries:

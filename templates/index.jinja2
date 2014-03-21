@@ -3,34 +3,28 @@
 <html>
     <head>
         <link rel="stylesheet" type="text/css" href="css/index.css">
+        <h1>udatheme blog</h1>
     </head>
   <body>
     {% for post in posts %}
       {% if post.title %}
-        <div class="title">
+        <div class="post-title">
             <b>{{ post.title }}</b> 
         </div>
       {% endif %}
       {% if post.date %}
-        <div class="date">
+        <div class="post-date">
             <b>{{ post.date }}</b> 
         </div>
       {% endif %}
-      <br>
+    <hr>
       {% if post.content%}
-        <div class="content">
-            <b>{{ post.content }}</b> 
+        <div class="post-content">
+            <p>{{ post.content }}</p> 
         </div>
       {% endif %}
-    <hr>
+    <br>
     {% endfor %}
-
-    <form action="/newpost" method="post">
-      <div><textarea name="title" rows="1" cols="60"></textarea></div>
-      <div><textarea name="content" rows="3" cols="60"></textarea></div>
-      <div><input type="submit" value="Post"></div>
-    </form>
-
   </body>
 </html>
 {% endautoescape %}
