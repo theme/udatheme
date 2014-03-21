@@ -39,15 +39,24 @@ class BlogPage(webapp2.RequestHandler):
                 jinja_temp('index.jinja2').render({'posts':posts}))
 
 class NewpostPage(webapp2.RequestHandler):
+    def write_response(self,title='',content='',err=''):
+        self.response.write( jinja_temp('newpost.jinja2').render({
+            'subject':title,
+            'content':content,
+            'error':err}))
     def get(self):
-        self.response.write( jinja_temp('newpost.jinja2').render())
+        self.write_response()
 
     def post(self):
         p = Post(parent=blog_key())
         p.title = self.request.get("subject")
         p.content= self.request.get("content")
-        p.put()
-        self.redirect("/blog")
+
+        if p.title and p.content :
+            p.put()
+            self.redirect("/blog")
+        else:
+            self.write_response(p.title,p.content,'need title & content')
 
 class MainPage(webapp2.RequestHandler):
     def get(self):
