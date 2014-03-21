@@ -36,7 +36,7 @@ class BlogPage(webapp2.RequestHandler):
         posts= posts_qry.fetch(5)
 
         self.response.write(
-                jinja_temp('index.jinja2').render({'posts':posts}))
+                jinja_temp('blog.jinja2').render({'posts':posts}))
 
 class NewpostPage(webapp2.RequestHandler):
     def write_response(self,title='',content='',err=''):

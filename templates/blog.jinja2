@@ -1,13 +1,7 @@
-<!DOCTYPE html>
+{% extends "base.jinja2" %}
+
+{% block posts %}
 {% autoescape true %}
-<html>
-    <head>
-        <link rel="stylesheet" type="text/css" href="/css/index.css">
-        <a href="/blog">
-            <h1>udatheme blog</h1>
-        </a>
-    </head>
-  <body>
     {% for post in posts %}
       {% if post.title %}
         <div class="post-title">
@@ -19,14 +13,14 @@
             <b>{{ post.date }}</b> 
         </div>
       {% endif %}
-    <hr>
+      <hr>
       {% if post.content%}
         <div class="post-content">
             <p>{{ post.content }}</p> 
         </div>
       {% endif %}
-    <br>
+      <br>
     {% endfor %}
-  </body>
-</html>
 {% endautoescape %}
+{% endblock posts %}
+
