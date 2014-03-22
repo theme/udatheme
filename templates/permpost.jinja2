@@ -1,0 +1,23 @@
+{% extends "base.jinja2" %}
+
+{% block permpost %}
+{% autoescape true %}
+      {% if post.title %}
+        <div class="post-title">
+            <b>{{ post.title }}</b> 
+        </div>
+      {% endif %}
+      {% if post.date %}
+        <div class="post-date">
+            <b>{{ post.date }}</b> 
+        </div>
+      {% endif %}
+      <hr>
+      {% if post.content%}
+        <div class="post-content">
+            <p>{{ post.content }}</p> 
+        </div>
+      {% endif %}
+{% endautoescape %}
+{% endblock permpost %}
+
