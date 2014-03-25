@@ -14,6 +14,7 @@ JINJA_ENVIRONMENT = jinja2.Environment(
         autoescape=True)
 
 DEFAULT_BLOG_NAME= 'default_blog'
+MOST_RECENT_POSTS= 10
 
 def jinja_temp(fn):
     return JINJA_ENVIRONMENT.get_template(fn)
@@ -22,6 +23,9 @@ def blog_key(blog_name=DEFAULT_BLOG_NAME):
     """root entity: blog"""
     return ndb.Key('Blog', blog_name)
 
+def post_key(post_id,blog_name=DEFAULT_BLOG_NAME):
+    return ndb.Key('Blog', blog_name, 'Post', str(post_id))
+    
 class Post(ndb.Model):
     title = ndb.StringProperty()
     content = ndb.StringProperty(indexed=False)
@@ -31,7 +35,7 @@ class BlogPage(webapp2.RequestHandler):
     def get(self):
         posts_qry = Post.query(
                 ancestor=blog_key()).order(-Post.date)
-        posts= posts_qry.fetch(5)
+        posts= posts_qry.fetch(MOST_RECENT_POSTS)
 
         self.response.write(
                 jinja_temp('blog.jinja2').render({'posts':posts}))
@@ -52,20 +56,16 @@ class NewpostPage(webapp2.RequestHandler):
         p.content= self.request.get("content")
 
         if p.title and p.content :
-            pkey = p.put()
-            self.redirect( "/blog/" + str( pkey.id() ) )
+            self.redirect( "/blog/%s" % str( p.put().id() ) )
         else:
             self.write_response( p.title, p.content, 'need title & content')
 
 class PermPost(webapp2.RequestHandler):
-    def get(self, **kwargs):
-        p = None
-        if kwargs is not None:
-            for i in kwargs:
-                if i == "post_id":
-                    p = ndb.Key("Post",i).get()
-                    break
-        self.response.write( jinja_temp('permpost.jinja2').render({ 'post':p}))
+    def get(self, **kwargs ):
+        #p = post_key( int(kwargs["post_id"] ) ).get()
+        p = Post.get_by_id( int(kwargs['post_id'] ), parent = blog_key())
+        print p
+        self.response.write( jinja_temp('permpost.jinja2').render({ 'post':p }))
 
 class MainPage(webapp2.RequestHandler):
     def get(self):
