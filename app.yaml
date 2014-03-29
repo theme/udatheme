@@ -10,9 +10,9 @@ handlers:
 - url: /
   script: main.app
 - url: /signup
-  script: signup.app
+  script: usr.app
 - url: /blog.*
-  script: main.app
+  script: blog.app
 
 libraries:
 - name: webapp2
