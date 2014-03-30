@@ -87,85 +87,123 @@ def sign_up_user(usr_username, usr_password, usr_email):
 # Handlers
 USER_COOKIE_NAME='usr'
 
-class SignUp(webapp2.RequestHandler):
-    def write_form(self,
-            username="",
-            error_username="",
-            password="",
-            passverify="",
-            error_password="",
-            error_passverify="",
-            email="",
-            error_email=""):
+class UsrPageHandler(webapp2.RequestHandler):
+    ''' read and write page with usr account form'''
+    usr_name = ''
+    err_name = ''
+    usr_pw = '' # password
+    err_pw = ''
+    usr_pwv = '' # password verify
+    err_pwv = ''
+    usr_email = ''
+    err_email = ''
 
+    usr_cookie = '' # 'usr' cookie string
+    coo_usr_name = ''
+    coo_usr_hash = ''
+
+    def get_usr_input(self):
+        self.usr_name = self.request.get("username")
+        self.usr_pw = self.request.get("password")
+        self.usr_pwv= self.request.get("verify")
+        self.usr_email = self.request.get("email")
+        self.err_name = ''
+        self.err_pw = ''
+        self.err_pwv = ''
+        self.err_email = ''
+
+    def write_form(self, temp_name):
         self.response.out.write(
-                jinja_temp('signup.jinja2').render({
-            "username": username,
-            "error_username": error_username,
-            "password": password,
-            "passverify": passverify,
-            "error_password": error_password,
-            "error_passverify": error_passverify,
-            "email": email,
-            "error_email": error_email}))
+            jinja_temp(temp_name).render({
+                "username": self.usr_name,
+                "error_username": self.err_name,
+                "password": self.usr_pw,
+                "passverify": self.usr_pwv,
+                "error_password": self.err_pw,
+                "error_passverify": self.err_pwv,
+                "email": self.usr_email,
+                "error_email": self.err_email }))
 
-    def set_cookie_user(self, user_name, pass_hash ):
+    def set_cookie_user(self):
         self.response.headers.add_header('Set-Cookie',
-                str( '%s=%s|%s; Path=/'
-                %( USER_COOKIE_NAME, user_name, pass_hash) )
-                )
+                str( '%s=%s|%s; Path=/' %(
+                    USER_COOKIE_NAME, self.coo_usr_name,
+                    self.coo_usr_hash)))
+                
+    def get_cookie_user(self):
+        self.usr_cookie = self.request.cookies[USER_COOKIE_NAME]
+        self.coo_usr_name = self.usr_cookie.split('|')[0]
+        self.coo_usr_hash = self.usr_cookie.split('|')[1]
 
+class SignUpHandler(UsrPageHandler):
     def post(self):
-        usr_username = self.request.get("username")
-        usr_password = self.request.get("password")
-        usr_passverify = self.request.get("verify")
-        usr_email = self.request.get("email")
+        self.get_usr_input()
 
-        error_username = ""
-        error_password = ""
-        error_passverify = ""
-        error_email = ""
+        if not valid_username(self.usr_name):
+            self.err_name = "invalid user name"
 
-        if not valid_username(usr_username):
-            error_username = "invalid user name"
+        if not unused_username(self.usr_name):
+            self.err_name = "usr exist"
 
-        if not unused_username(usr_username):
-            error_username = "usr exist"
+        if not self.usr_pw == self.usr_pwv:
+            self.err_pwv = "not correspand"
+            self.usr_pw = ""
+            self.usr_pwv = ""
 
-        if not usr_password == usr_passverify :
-            error_passverify = "not correspand"
-            usr_password = ""
-            usr_passverify = ""
+        elif not valid_password(self.usr_pw):
+            self.err_pw = "invalid password"
+            self.usr_pw = ""
+            self.usr_pwv = ""
 
-        elif not valid_password(usr_password):
-            error_password = "invalid password"
-            usr_password = ""
-            usr_passverify = ""
+        if not valid_email(self.usr_email):
+            self.err_email = "invalid email"
 
-        if not valid_email(usr_email):
-            error_email = "invalid email"
-
-        if ( error_username + error_password + error_passverify + error_email != "" ):
-            self.write_form(usr_username, error_username,
-				"", "", error_password, error_passverify,
-				usr_email, error_email)
+        if not ( self.err_name + self.err_pw + self.err_pwv +
+                self.err_email == "" ):
+            self.write_form('signup.jinja2')
         else:
-            user_key = sign_up_user( usr_username, usr_password, usr_email)
-            self.set_cookie_user( usr_username, user_key.get().pass_hash )
+            user_key = sign_up_user( self.usr_name, self.usr_pw,
+                    self.usr_email)
+            self.coo_usr_name = self.usr_name
+            self.coo_usr_hash = user_key.get().pass_hash
+            self.set_cookie_user()
             self.redirect("/welcome")
 
     def get(self):
-        self.write_form()
+        self.write_form('signup.jinja2')
 
-class WelcomeHandler(webapp2.RequestHandler):
-    def get(self):
-        usr_cookie = self.request.cookies[USER_COOKIE_NAME]
-        usr_username = usr_cookie.split('|')[0]
-        if not usr_username == '':
-            self.response.out.write("Welcome! %s" % usr_username)
+class LoginHandler(UsrPageHandler):
+    def post(self):
+        self.get_usr_input()
+
+        usr = query_user(self.usr_name)
+        if not usr == None:
+            new_hash = make_pw_hash(self.usr_name, self.usr_pw, usr.salt)
+            if new_hash == usr.pass_hash:
+                self.coo_usr_name = self.usr_name
+                self.coo_usr_hash = new_hash
+                self.set_cookie_user()
+                self.redirect("/welcome")
+            else:
+                self.err_pwv = 'wrong password'
+                self.write_form('login.jinja2')
         else:
-            self.redirect("/signup")
+            self.err_name = 'no such user'
+            self.write_form('login.jinja2')
 
-app = webapp2.WSGIApplication([	('/signup', SignUp),
-                                ('/welcome', WelcomeHandler),],
-                                debug=True)
+    def get(self):
+        self.write_form('login.jinja2')
+
+class WelcomeHandler(UsrPageHandler):
+    def get(self):
+        self.get_cookie_user()
+        if not self.coo_usr_name == '':
+            self.response.out.write("Welcome! %s" % self.coo_usr_name)
+        else:
+            self.redirect("/login")
+
+app = webapp2.WSGIApplication(
+        [('/signup', SignUpHandler),
+            ('/login', LoginHandler),
+            ('/welcome', WelcomeHandler),],
+        debug=True)
