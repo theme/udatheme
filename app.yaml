@@ -15,6 +15,8 @@ handlers:
   script: usr.app
 - url: /welcome
   script: usr.app
+- url: /logout
+  script: usr.app
 - url: /blog.*
   script: blog.app
 

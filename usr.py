@@ -130,6 +130,10 @@ class UsrPageHandler(webapp2.RequestHandler):
                     USER_COOKIE_NAME, self.coo_usr_name,
                     self.coo_usr_hash)))
                 
+    def rm_cookie_user(self):
+        self.response.headers.add_header('Set-Cookie',
+                str( '%s=; Path=/; Expires=Thu, 01-Jan-1970 00:00:00 GMT' %(USER_COOKIE_NAME)))
+
     def get_cookie_user(self):
         self.usr_cookie = self.request.cookies[USER_COOKIE_NAME]
         self.coo_usr_name = self.usr_cookie.split('|')[0]
@@ -202,8 +206,14 @@ class WelcomeHandler(UsrPageHandler):
         else:
             self.redirect("/login")
 
+class LogoutHandler(UsrPageHandler):
+    def get(self):
+        self.rm_cookie_user()
+        self.redirect("/signup")
+        
 app = webapp2.WSGIApplication(
         [('/signup', SignUpHandler),
             ('/login', LoginHandler),
+            ('/logout', LogoutHandler),
             ('/welcome', WelcomeHandler),],
         debug=True)
