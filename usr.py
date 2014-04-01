@@ -135,9 +135,12 @@ class UsrPageHandler(webapp2.RequestHandler):
                 str( '%s=; Path=/; Expires=Thu, 01-Jan-1970 00:00:00 GMT' %(USER_COOKIE_NAME)))
 
     def get_cookie_user(self):
-        self.usr_cookie = self.request.cookies[USER_COOKIE_NAME]
-        self.coo_usr_name = self.usr_cookie.split('|')[0]
-        self.coo_usr_hash = self.usr_cookie.split('|')[1]
+        try:
+            self.usr_cookie = self.request.cookies[USER_COOKIE_NAME]
+            self.coo_usr_name = self.usr_cookie.split('|')[0]
+            self.coo_usr_hash = self.usr_cookie.split('|')[1]
+        except:
+            pass
 
 class SignUpHandler(UsrPageHandler):
     def post(self):

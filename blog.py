@@ -8,6 +8,7 @@ from google.appengine.ext import ndb
 
 import jinja2
 import webapp2
+from webapp2_extras import routes
 
 JINJA_ENVIRONMENT = jinja2.Environment(
         loader=jinja2.FileSystemLoader(os.path.join( os.path.dirname(__file__), 'templates')),
@@ -92,10 +93,12 @@ class JsonBlog(webapp2.RequestHandler):
         self.response.write( json.dumps(li))
 
 app = webapp2.WSGIApplication([
-    webapp2.Route(r'/blog', handler = BlogPage, name='blog'),
-    webapp2.Route(r'/blog/<:\.json$>', handler = JsonBlog, name='jsonblog'),
-    webapp2.Route(r'/blog/newpost', handler = NewpostPage, name='newpost'),
-    webapp2.Route(r'/blog/<post_id:\d+>', handler = PermPost, name='permpost'),
-    webapp2.Route(r'/blog/<post_id:\d+><:\.json$>', handler = JsonPost, name='jsonpost'),
-    ], debug=True)
+        routes.PathPrefixRoute('/blog', [
+            webapp2.Route(r'/', handler = BlogPage, name='blog'),
+            webapp2.Route(r'/?(?:\.json)?', handler = JsonBlog, name='jsonblog'),
+            webapp2.Route(r'/newpost', handler = NewpostPage, name='newpost'),
+            webapp2.Route(r'/<post_id:\d+>', handler = PermPost, name='permpost'),
+            webapp2.Route(r'/<post_id:\d+>(?:\.json$)', handler = JsonPost, name='jsonpost'),
+            ])],
+        debug=True)
 
