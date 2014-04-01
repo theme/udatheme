@@ -1,6 +1,7 @@
 import os
 import cgi
-import urllib
+import urllib2
+import json
 
 from google.appengine.api import users
 from google.appengine.ext import ndb
@@ -29,12 +30,19 @@ def post_key(post_id,blog_name=DEFAULT_BLOG_NAME):
 class Post(ndb.Model):
     title = ndb.StringProperty()
     content = ndb.StringProperty(indexed=False)
-    date = ndb.DateTimeProperty(auto_now_add=True)
+    created = ndb.DateTimeProperty(auto_now_add=True)
+    
+    def toJson(self):
+        p = { "subject": self.title,
+                "content": self.content,
+                "created": self.created.strftime("%a %b %d %H:%M:%S %Y")
+            }
+        return json.dumps( p )
 
 class BlogPage(webapp2.RequestHandler):
     def get(self):
         posts_qry = Post.query(
-                ancestor=blog_key()).order(-Post.date)
+                ancestor=blog_key()).order(-Post.created)
         posts= posts_qry.fetch(MOST_RECENT_POSTS)
 
         self.response.write(
@@ -62,19 +70,28 @@ class NewpostPage(webapp2.RequestHandler):
 
 class PermPost(webapp2.RequestHandler):
     def get(self, **kwargs ):
-        #p = post_key( int(kwargs["post_id"] ) ).get()
         p = Post.get_by_id( int(kwargs['post_id'] ), parent = blog_key())
-        print p
         self.response.write( jinja_temp('permpost.jinja2').render({ 'post':p }))
 
-class MainPage(webapp2.RequestHandler):
-    def get(self):
-        self.response.write("<h1>welcome</h1>")
+class JsonPost(webapp2.RequestHandler):
+    def get(self, *arg, **kwargs ):
+        p = Post.get_by_id( int(kwargs['post_id'] ), parent = blog_key())
+        self.response.write( p.toJson() )
+
+class JsonBlog(webapp2.RequestHandler):
+    def get(self, *arg, **kwargs):
+        posts_qry = Post.query(
+                ancestor=blog_key()).order(-Post.created)
+        posts= posts_qry.fetch(MOST_RECENT_POSTS)
+
+        li = [ p.toJson() for p in posts ]
+        self.response.write( json.dumps(li))
 
 app = webapp2.WSGIApplication([
-    webapp2.Route(r'/', handler = MainPage, name='home'),
     webapp2.Route(r'/blog', handler = BlogPage, name='blog'),
+    webapp2.Route(r'/blog<:\.json$>', handler = JsonBlog, name='jsonblog'),
     webapp2.Route(r'/blog/newpost', handler = NewpostPage, name='newpost'),
     webapp2.Route(r'/blog/<post_id:\d+>', handler = PermPost, name='permpost'),
+    webapp2.Route(r'/blog/<post_id:\d+><:\.json$>', handler = JsonPost, name='jsonpost'),
     ], debug=True)
 

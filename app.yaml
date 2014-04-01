@@ -7,8 +7,10 @@ threadsafe: yes
 handlers:
 - url: /css
   static_dir: css
+
 - url: /
   script: main.app
+
 - url: /signup
   script: usr.app
 - url: /login
@@ -17,6 +19,7 @@ handlers:
   script: usr.app
 - url: /logout
   script: usr.app
+
 - url: /blog.*
   script: blog.app
 
