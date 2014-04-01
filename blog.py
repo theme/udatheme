@@ -93,7 +93,7 @@ class JsonBlog(webapp2.RequestHandler):
 
 app = webapp2.WSGIApplication([
     webapp2.Route(r'/blog', handler = BlogPage, name='blog'),
-    webapp2.Route(r'/blog<:\.json$>', handler = JsonBlog, name='jsonblog'),
+    webapp2.Route(r'/blog/<:\.json$>', handler = JsonBlog, name='jsonblog'),
     webapp2.Route(r'/blog/newpost', handler = NewpostPage, name='newpost'),
     webapp2.Route(r'/blog/<post_id:\d+>', handler = PermPost, name='permpost'),
     webapp2.Route(r'/blog/<post_id:\d+><:\.json$>', handler = JsonPost, name='jsonpost'),

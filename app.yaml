@@ -11,13 +11,13 @@ handlers:
 - url: /
   script: main.app
 
-- url: /signup
+- url: /blog/signup
   script: usr.app
-- url: /login
+- url: /blog/login
   script: usr.app
-- url: /welcome
+- url: /blog/logout
   script: usr.app
-- url: /logout
+- url: /blog/welcome
   script: usr.app
 
 - url: /blog.*

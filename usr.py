@@ -171,7 +171,7 @@ class SignUpHandler(UsrPageHandler):
             self.coo_usr_name = self.usr_name
             self.coo_usr_hash = user_key.get().pass_hash
             self.set_cookie_user()
-            self.redirect("/welcome")
+            self.redirect("/blog/welcome")
 
     def get(self):
         self.write_form('signup.jinja2')
@@ -187,7 +187,7 @@ class LoginHandler(UsrPageHandler):
                 self.coo_usr_name = self.usr_name
                 self.coo_usr_hash = new_hash
                 self.set_cookie_user()
-                self.redirect("/welcome")
+                self.redirect("/blog/welcome")
             else:
                 self.err_pwv = 'wrong password'
                 self.write_form('login.jinja2')
@@ -204,16 +204,16 @@ class WelcomeHandler(UsrPageHandler):
         if not self.coo_usr_name == '':
             self.response.out.write("Welcome! %s" % self.coo_usr_name)
         else:
-            self.redirect("/login")
+            self.redirect("/blog/login")
 
 class LogoutHandler(UsrPageHandler):
     def get(self):
         self.rm_cookie_user()
-        self.redirect("/signup")
+        self.redirect("/blog/signup")
         
 app = webapp2.WSGIApplication(
-        [('/signup', SignUpHandler),
-            ('/login', LoginHandler),
-            ('/logout', LogoutHandler),
-            ('/welcome', WelcomeHandler),],
+        [('/blog/signup', SignUpHandler),
+            ('/blog/login', LoginHandler),
+            ('/blog/logout', LogoutHandler),
+            ('/blog/welcome', WelcomeHandler),],
         debug=True)
