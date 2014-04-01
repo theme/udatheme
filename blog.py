@@ -76,6 +76,8 @@ class PermPost(webapp2.RequestHandler):
 class JsonPost(webapp2.RequestHandler):
     def get(self, *arg, **kwargs ):
         p = Post.get_by_id( int(kwargs['post_id'] ), parent = blog_key())
+        self.response.headers.add_header('Content-Type',
+                str( 'application/json_charset=utf-8' ))
         self.response.write( p.toJson() )
 
 class JsonBlog(webapp2.RequestHandler):
@@ -85,6 +87,8 @@ class JsonBlog(webapp2.RequestHandler):
         posts= posts_qry.fetch(MOST_RECENT_POSTS)
 
         li = [ p.toJson() for p in posts ]
+        self.response.headers.add_header('Content-Type',
+                str( 'application/json_charset=utf-8' ))
         self.response.write( json.dumps(li))
 
 app = webapp2.WSGIApplication([
