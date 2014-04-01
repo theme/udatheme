@@ -40,7 +40,7 @@ class Post(ndb.Model):
             }
         return json.dumps( p )
 
-class BlogPage(webapp2.RequestHandler):
+class BlogFront(webapp2.RequestHandler):
     def get(self):
         posts_qry = Post.query(
                 ancestor=blog_key()).order(-Post.created)
@@ -93,12 +93,12 @@ class JsonBlog(webapp2.RequestHandler):
         self.response.write( json.dumps(li))
 
 app = webapp2.WSGIApplication([
-        routes.PathPrefixRoute('/blog', [
-            webapp2.Route(r'/', handler = BlogPage, name='blog'),
-            webapp2.Route(r'/?(?:\.json)?', handler = JsonBlog, name='jsonblog'),
-            webapp2.Route(r'/newpost', handler = NewpostPage, name='newpost'),
-            webapp2.Route(r'/<post_id:\d+>', handler = PermPost, name='permpost'),
-            webapp2.Route(r'/<post_id:\d+>(?:\.json$)', handler = JsonPost, name='jsonpost'),
-            ])],
-        debug=True)
+    webapp2.SimpleRoute(r'/blog/?', handler=BlogFront, name='blogfront'),
+    webapp2.SimpleRoute(r'/blog/?\.json', handler = JsonBlog, name='jsonblog'),
+    routes.PathPrefixRoute(r'/blog', [
+        webapp2.Route(r'/newpost', handler = NewpostPage, name='newpost'),
+        webapp2.Route(r'/<post_id:\d+>', handler = PermPost, name='permpost'),
+        webapp2.Route(r'/<post_id:\d+><:\.json$>', handler = JsonPost, name='jsonpost'),   
+        ])],
+    debug=True)
 
