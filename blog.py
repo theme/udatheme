@@ -2,8 +2,10 @@ import os
 import cgi
 import urllib2
 import json
+import time
 
 from google.appengine.api import users
+from google.appengine.api import memcache
 from google.appengine.ext import ndb
 
 import jinja2
@@ -27,12 +29,18 @@ def blog_key(blog_name=DEFAULT_BLOG_NAME):
 
 def post_key(post_id,blog_name=DEFAULT_BLOG_NAME):
     return ndb.Key('Blog', blog_name, 'Post', str(post_id))
+
+def get_posts( most_recent_num ):
+    posts_qry = Post.query(
+                ancestor=blog_key()).order(-Post.created)
+    posts= posts_qry.fetch(most_recent_num)
+    return posts
     
 class Post(ndb.Model):
     title = ndb.StringProperty()
     content = ndb.StringProperty(indexed=False)
     created = ndb.DateTimeProperty(auto_now_add=True)
-    
+
     def toJson(self):
         p = { "subject": self.title,
                 "content": self.content,
@@ -41,13 +49,24 @@ class Post(ndb.Model):
         return json.dumps( p )
 
 class BlogFront(webapp2.RequestHandler):
-    def get(self):
-        posts_qry = Post.query(
-                ancestor=blog_key()).order(-Post.created)
-        posts= posts_qry.fetch(MOST_RECENT_POSTS)
+    @classmethod
+    def update_cache(cls):
+        posts = get_posts(MOST_RECENT_POSTS)
+        query_time = time.time()
+        memcache.set( 'posts', (posts,query_time) )
+        return (posts, query_time)
 
-        self.response.write(
-                jinja_temp('blog.jinja2').render({'posts':posts}))
+    def get(self):
+        c = memcache.get( 'posts' )
+
+        if c is None:
+            posts, query_time = self.update_cache()
+        else:
+            posts, query_time = c
+
+        front = jinja_temp('blog.jinja2').render({'posts':posts,
+            'after_query_seconds': time.time()-query_time})
+        self.response.write( front )
 
 class NewpostPage(webapp2.RequestHandler):
     def write_response(self,title='',content='',err=''):
@@ -66,6 +85,7 @@ class NewpostPage(webapp2.RequestHandler):
 
         if p.title and p.content :
             self.redirect( "/blog/%s" % str( p.put().id() ) )
+            BlogFront.update_cache()
         else:
             self.write_response( p.title, p.content, 'need title & content')
 
