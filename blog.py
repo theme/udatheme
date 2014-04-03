@@ -96,14 +96,14 @@ class PermPost(webapp2.RequestHandler):
     def update_cache(cls, post_id):
         query_time = time.time()
         p = Post.get_by_id( int(post_id), parent = blog_key())
-        memcache.set(post_id, (p, query_time))
+        memcache.set(str(post_id), (p, query_time))
         return (p,query_time)
 
     def get(self, **kwargs ):
         post_id = kwargs['post_id'] 
 
         # read cache
-        c = memcache.get(post_id)
+        c = memcache.get(str(post_id))
         if c is None:
             c = self.update_cache( post_id )
 

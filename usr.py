@@ -7,6 +7,7 @@ from google.appengine.ext import ndb
 
 import jinja2
 import webapp2
+from webapp2_extras import routes
 
 JINJA_ENVIRONMENT = jinja2.Environment(
         loader=jinja2.FileSystemLoader(os.path.join( os.path.dirname(__file__), 'templates')),
@@ -215,9 +216,11 @@ class LogoutHandler(UsrPageHandler):
         self.rm_cookie_user()
         self.redirect("/blog/signup")
         
-app = webapp2.WSGIApplication(
-        [('/blog/signup', SignUpHandler),
-            ('/blog/login', LoginHandler),
-            ('/blog/logout', LogoutHandler),
-            ('/blog/welcome', WelcomeHandler),],
-        debug=True)
+app = webapp2.WSGIApplication([
+    routes.PathPrefixRoute(r'/blog', [
+        webapp2.SimpleRoute(r'/signup', handler = SignUpHandler),
+        webapp2.SimpleRoute(r'/login', handler = LoginHandler),
+        webapp2.SimpleRoute(r'/logout', handler = LogoutHandler),
+        webapp2.SimpleRoute(r'/welcome', handler = WelcomeHandler),
+        ])],
+    debug=True)
