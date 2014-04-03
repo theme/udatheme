@@ -111,6 +111,11 @@ class PermPost(webapp2.RequestHandler):
 
         self.response.write( jinja_temp('permpost.jinja2').render({ 'post':p , 'queried_time_seconds': time.time() - query_time}))
 
+class FlushCache(webapp2.RequestHandler):
+    def get(self):
+        memcache.flush_all()
+        self.redirect('/blog/')
+
 class JsonPost(webapp2.RequestHandler):
     def get(self, *arg, **kwargs ):
         p = Post.get_by_id( int(kwargs['post_id'] ), parent = blog_key())
@@ -136,6 +141,7 @@ app = webapp2.WSGIApplication([
         webapp2.Route(r'/newpost', handler = NewpostPage, name='newpost'),
         webapp2.Route(r'/<post_id:\d+>', handler = PermPost, name='permpost'),
         webapp2.Route(r'/<post_id:\d+><:\.json$>', handler = JsonPost, name='jsonpost'),   
+        webapp2.Route(r'/flush', handler = FlushCache, name='newpost'),
         ])],
     debug=True)
 
