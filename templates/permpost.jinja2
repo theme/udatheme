@@ -1,5 +1,9 @@
 {% extends "base.jinja2" %}
 
+{% block title %}
+    {{ post.title }}
+{% endblock title %}
+
 {% block permpost %}
 {% autoescape true %}
       {% if post.title %}

@@ -1,5 +1,10 @@
 {% extends "base.jinja2" %}
 
+{% block title %}
+    blog
+{% endblock title %}
+
+
 {% block posts %}
 {% autoescape true %}
     {% for post in posts %}
