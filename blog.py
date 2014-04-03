@@ -84,15 +84,32 @@ class NewpostPage(webapp2.RequestHandler):
         p.content= self.request.get("content")
 
         if p.title and p.content :
-            self.redirect( "/blog/%s" % str( p.put().id() ) )
+            post_id = p.put().id() 
+            self.redirect( "/blog/%s" % str( post_id ) )
             BlogFront.update_cache()
+            PermPost.update_cache(post_id)
         else:
             self.write_response( p.title, p.content, 'need title & content')
 
 class PermPost(webapp2.RequestHandler):
+    @classmethod
+    def update_cache(cls, post_id):
+        query_time = time.time()
+        p = Post.get_by_id( int(post_id), parent = blog_key())
+        memcache.set(post_id, (p, query_time))
+        return (p,query_time)
+
     def get(self, **kwargs ):
-        p = Post.get_by_id( int(kwargs['post_id'] ), parent = blog_key())
-        self.response.write( jinja_temp('permpost.jinja2').render({ 'post':p }))
+        post_id = kwargs['post_id'] 
+
+        # read cache
+        c = memcache.get(post_id)
+        if c is None:
+            c = self.update_cache( post_id )
+
+        p, query_time = c
+
+        self.response.write( jinja_temp('permpost.jinja2').render({ 'post':p , 'queried_time_seconds': time.time() - query_time}))
 
 class JsonPost(webapp2.RequestHandler):
     def get(self, *arg, **kwargs ):
