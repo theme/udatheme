@@ -1,11 +1,18 @@
 <!DOCTYPE html>
 <html>
+    <title>
+        udatheme -
+        {% block title %}
+        {% endblock title %}
+    </title>
     <head>
         <link rel="stylesheet" type="text/css" href="/css/index.css">
         <a href="/blog"><h1>udatheme blog</h1></a>
     </head>
 
     <body>
+        {% block welcome %}
+        {% endblock welcome %}
 
         {% block posts %}
         {% endblock posts %}

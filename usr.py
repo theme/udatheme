@@ -122,7 +122,8 @@ class UsrPageHandler(webapp2.RequestHandler):
                 "error_password": self.err_pw,
                 "error_passverify": self.err_pwv,
                 "email": self.usr_email,
-                "error_email": self.err_email }))
+                "error_email": self.err_email,
+                "coo_usr_name": self.coo_usr_name}))
 
     def set_cookie_user(self):
         self.response.headers.add_header('Set-Cookie',
@@ -205,7 +206,7 @@ class WelcomeHandler(UsrPageHandler):
     def get(self):
         self.get_cookie_user()
         if not self.coo_usr_name == '':
-            self.response.out.write("Welcome! %s" % self.coo_usr_name)
+            self.write_form('welcome.jinja2')
         else:
             self.redirect("/blog/login")
 

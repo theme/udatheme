@@ -1,0 +1,12 @@
+{% extends "base.jinja2" %}
+
+{% block title %}
+    welcome
+{% endblock title %}
+
+{% block welcome%}
+{% autoescape true %}
+    <h2> Welcome, {{coo_usr_name}} ! </h2>
+{% endautoescape %}
+{% endblock welcome %}
+
