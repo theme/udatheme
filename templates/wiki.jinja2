@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+    <title>
+        udatheme wiki -
+        {% block title %}
+        {% endblock title %}
+    </title>
+    <head>
+        <link rel="stylesheet" type="text/css" href="/css/index.css">
+
+        <div id="ops_bar" style="align:right">
+            <!-- edit | history         usrname( logout ) -->
+            <!-- history        longin | signup -->
+            {% if usr and usr.name %}
+                <a href="./_edit/{{url}}">edit</a> |
+            {% endif %}
+                history
+
+            {% if usr and usr.name  %}
+                {{usr.name}}( <a href="/logout">logout</a> )
+            {% else %}
+                <a href="/login">login</a> | <a href="/signup">signup</a>
+            {% endif %}
+        </div>
+    </head>
+
+    <body>
+        {% block entry %}
+        {% endblock entry %}
+
+        {% block editform %}
+        {% endblock editform %}
+    </body>
+</html>
+
