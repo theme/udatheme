@@ -39,7 +39,7 @@ def query_user( username ):
     except IndexError:
         return None
 
-def unused_username(username):
+def is_unused_username(username):
     usr = query_user( username )
     if usr == None:
         return True
@@ -107,6 +107,11 @@ class UsrPageHandler(webapp2.RequestHandler):
     class usr():
         pass
 
+    def __init__(self, request, response):
+        webapp2.RequestHandler.__init__(self,request,response)
+        self.get_cookie_user()
+        self.usr.name = self.coo_usr_name
+
     def get_usr_input(self):
         self.usr_name = self.request.get("username")
         self.usr_pw = self.request.get("password")
@@ -117,9 +122,8 @@ class UsrPageHandler(webapp2.RequestHandler):
         self.err_pwv = ''
         self.err_email = ''
 
-    def write_form(self, temp_name):
-        self.response.out.write(
-            jinja_temp(temp_name).render({
+    def write_form(self, temp_name, arg):
+        arg_reg = {
                 "username": self.usr_name,
                 "error_username": self.err_name,
                 "password": self.usr_pw,
@@ -127,9 +131,15 @@ class UsrPageHandler(webapp2.RequestHandler):
                 "error_password": self.err_pw,
                 "error_passverify": self.err_pwv,
                 "email": self.usr_email,
-                "error_email": self.err_email,
+                "error_email": self.err_email
+                }
+        arg_usr = {
                 "coo_usr_name": self.coo_usr_name,
-                "usr":self.usr}))
+                "usr":self.usr
+                }
+        self.response.out.write( jinja_temp(temp_name).render(
+            dict(arg_reg.items() + arg_usr.items() + arg.items())
+            ))
 
     def set_cookie_user(self):
         self.response.headers.add_header('Set-Cookie',
@@ -159,7 +169,7 @@ class SignUpHandler(UsrPageHandler):
         if not valid_username(self.usr_name):
             self.err_name = "invalid user name"
 
-        if not unused_username(self.usr_name):
+        if not is_unused_username(self.usr_name):
             self.err_name = "usr exist"
 
         if not self.usr_pw == self.usr_pwv:
@@ -215,18 +225,24 @@ class LogoutHandler(UsrPageHandler):
     def get(self):
         self.rm_cookie_user()
         self.redirect("./login")
-        
+ 
 class WikiPage(UsrPageHandler):
-    def get(self,url):
-        logging.info('WikiPage.get() url=%s' % str(url))
-        self.get_cookie_user()
-        self.write_form('wiki.jinja2')
+    class article():
+        pass
 
-class EditPage(UsrPageHandler):
-    def get(self,url):
-        logging.info('EditPage.get() url=%s' % str(url))
-        self.get_cookie_user()
-        self.write_form('wiki.jinja2')
+    def get(self, title):
+        logging.info('WikiPage.get() title=%s' % str(title))
+        # check usr
+        # query title
+        # render page
+        self.article.title = title
+        self.write_form('wiki.jinja2', {'article': self.article})
+
+class EditPage(WikiPage):
+    def get(self, title):
+        logging.info('EditPage.get() title=%s' % str(title))
+        self.article.title = title
+        self.write_form('wiki_edit.jinja2',{'article': self.article})
         
 PAGE_RE = r'(/(?:[a-zA-Z0-9_-]+/?)*)'
 app = webapp2.WSGIApplication([('/signup', SignUpHandler),
@@ -236,3 +252,4 @@ app = webapp2.WSGIApplication([('/signup', SignUpHandler),
     (PAGE_RE, WikiPage),
     ],
     debug=True)
+

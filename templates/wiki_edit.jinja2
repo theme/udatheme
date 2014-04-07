@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
     <title>
-        udatheme wiki -
+        edit -
         {% block title %}
         {% endblock title %}
     </title>
@@ -9,11 +9,7 @@
         <link rel="stylesheet" type="text/css" href="/css/index.css">
 
         <div id="ops_bar" style="align:right">
-            <!-- edit | history         usrname( logout ) -->
-            <!-- history        longin | signup -->
-            {% if usr and usr.name %}
-                <a href="/_edit{{article.title}}">edit</a> |
-            {% endif %}
+            <!-- history         usrname( logout ) -->
                 history
 
             {% if usr and usr.name  %}
@@ -26,16 +22,17 @@
 
     <body>
         {% block entry %}
-
-        {% autoescape true %}
-        <h2> {{article.title}} </h2>
-        {{article.content}} 
-        {% endautoescape %}
-
         {% endblock entry %}
 
         {% block editform %}
+        <form action="./{{article.title}}" method="post">
+            <h2> {{article.title}} </h2>
+            <div><textarea name="content" rows="3" cols="60">{{content}}</textarea></div>
+            <div><input type="submit" value="Save"></div>
+            <p style="color:red">{{error}}<p>
+        </form>
         {% endblock editform %}
+
     </body>
 </html>
 
