@@ -225,25 +225,73 @@ class LogoutHandler(UsrPageHandler):
     def get(self):
         self.rm_cookie_user()
         self.redirect("./login")
+
+# Wiki Article
+DEFAULT_WIKI_NAME = 'default_wiki'
+
+class Article(ndb.Model):
+    title = ndb.StringProperty()
+    content = ndb.StringProperty( indexed=False )
+    def log(self):
+        logging.info('%s, %s' % ( self.title, self.content ) )
+
+def wiki_key( wiki_name = DEFAULT_WIKI_NAME ):
+    return ndb.Key('Wiki', wiki_name)
+
+def get_article_by_title( title = '' ):
+    try:
+        qry = Article.query( Article.title == title)
+        return qry.fetch(1)[0]
+    except:
+        return None
  
 class WikiPage(UsrPageHandler):
-    class article():
-        pass
+    article = Article()
+
+    def __init__(self, request, response):
+        UsrPageHandler.__init__(self, request, response)
 
     def get(self, title):
         logging.info('WikiPage.get() title=%s' % str(title))
         # check usr
         # query title
         # render page
-        self.article.title = title
-        self.write_form('wiki.jinja2', {'article': self.article})
+        a = get_article_by_title( title )
+        if a is None:
+            a = Article()
+            a.title = title
+        self.write_form('wiki.jinja2', {'article': a})
 
 class EditPage(WikiPage):
     def get(self, title):
         logging.info('EditPage.get() title=%s' % str(title))
-        self.article.title = title
-        self.write_form('wiki_edit.jinja2',{'article': self.article})
+        a = get_article_by_title( title )
+        if a is None:
+            a = Article()
+            a.title = title
+        a.log()
+        self.write_form('wiki_edit.jinja2',{'article': a})
+
+    def post(self, title):
+        self.article.content = self.request.get('content')
+        print self.article.content
+        a = Article(parent=wiki_key())
+        a.title = title
+        a.content = self.article.content
+        # check usr
+        # query article
+        # update article
+        # save article
         
+        if a.title and a.content :
+            a_id = a.put().id() 
+            url = '%s' % str( title )
+            logging.info( 'EditPage.post() redirect -> %s' % url )
+            self.redirect( url )
+            #PermPost.update_cache(post_id)
+        else:
+            self.write_form('wiki_edit.jinja2',{'article': self.article})
+
 PAGE_RE = r'(/(?:[a-zA-Z0-9_-]+/?)*)'
 app = webapp2.WSGIApplication([('/signup', SignUpHandler),
     ('/login', LoginHandler),

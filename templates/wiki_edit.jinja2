@@ -25,9 +25,9 @@
         {% endblock entry %}
 
         {% block editform %}
-        <form action="./{{article.title}}" method="post">
+        <form action="/_edit{{article.title}}" method="post">
             <h2> {{article.title}} </h2>
-            <div><textarea name="content" rows="3" cols="60">{{content}}</textarea></div>
+            <div><textarea name="content" rows="3" cols="60">{{article.content}}</textarea></div>
             <div><input type="submit" value="Save"></div>
             <p style="color:red">{{error}}<p>
         </form>
