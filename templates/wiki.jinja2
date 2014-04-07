@@ -29,7 +29,9 @@
 
         {% autoescape true %}
         <h2> {{article.title}} </h2>
-        {{article.content}} 
+        {% if article.content %}
+            {{article.content}} 
+        {% endif %}
         {% endautoescape %}
 
         {% endblock entry %}

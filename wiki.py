@@ -122,7 +122,7 @@ class UsrPageHandler(webapp2.RequestHandler):
         self.err_pwv = ''
         self.err_email = ''
 
-    def write_form(self, temp_name, arg):
+    def write_form(self, temp_name, arg={}):
         arg_reg = {
                 "username": self.usr_name,
                 "error_username": self.err_name,
@@ -240,7 +240,7 @@ def wiki_key( wiki_name = DEFAULT_WIKI_NAME ):
 
 def get_article_by_title( title = '' ):
     try:
-        qry = Article.query( Article.title == title)
+        qry = Article.query( Article.title == title, ancestor=wiki_key())
         return qry.fetch(1)[0]
     except:
         return None
@@ -252,11 +252,11 @@ class WikiPage(UsrPageHandler):
         UsrPageHandler.__init__(self, request, response)
 
     def get(self, title):
-        logging.info('WikiPage.get() title=%s' % str(title))
         # check usr
         # query title
         # render page
         a = get_article_by_title( title )
+        logging.info( 'Wikipage get() get_article_by_title %s: %s' % (title, a) )
         if a is None:
             a = Article()
             a.title = title
@@ -273,18 +273,18 @@ class EditPage(WikiPage):
         self.write_form('wiki_edit.jinja2',{'article': a})
 
     def post(self, title):
-        self.article.content = self.request.get('content')
-        print self.article.content
-        a = Article(parent=wiki_key())
+        a = get_article_by_title( title )
+        if a is None:
+            a = Article(parent=wiki_key())
         a.title = title
-        a.content = self.article.content
+        a.content = self.request.get('content')
         # check usr
         # query article
         # update article
         # save article
         
         if a.title and a.content :
-            a_id = a.put().id() 
+            a.put() 
             url = '%s' % str( title )
             logging.info( 'EditPage.post() redirect -> %s' % url )
             self.redirect( url )
