@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html>
     <title>
-        udatheme wiki -
+        wiki -
         {% block title %}
+            {{article.title}}
         {% endblock title %}
     </title>
     <head>
@@ -11,13 +12,13 @@
         <div id="ops_bar" style="align:right">
             <!-- edit | history         usrname( logout ) -->
             <!-- history        longin | signup -->
-            {% if usr and usr.name %}
+            {% if usrname %}
                 <a href="/_edit{{article.title}}">edit</a> |
             {% endif %}
                 history
 
-            {% if usr and usr.name  %}
-                {{usr.name}}( <a href="/logout">logout</a> )
+            {% if usrname  %}
+                {{usrname}}( <a href="/logout">logout</a> )
             {% else %}
             <a href="/login?a={{article.title}}">login</a> | <a href="/signup?a={{article.title}}">signup</a>
             {% endif %}
@@ -27,12 +28,12 @@
     <body>
         {% block entry %}
 
-        {% autoescape true %}
         <h2> {{article.title}} </h2>
         {% if article.content %}
+        {% autoescape false %}
             {{article.content}} 
-        {% endif %}
         {% endautoescape %}
+        {% endif %}
 
         {% endblock entry %}
 

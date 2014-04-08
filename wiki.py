@@ -3,12 +3,15 @@ import cgi
 import urllib
 import logging
 
-from google.appengine.api import users
+#from google.appengine.api import users
 from google.appengine.ext import ndb
 
 import jinja2
 import webapp2
 from webapp2_extras import routes
+
+# module
+import usr
 
 JINJA_ENVIRONMENT = jinja2.Environment(
         loader=jinja2.FileSystemLoader(os.path.join( os.path.dirname(__file__), 'templates')),
@@ -18,79 +21,57 @@ JINJA_ENVIRONMENT = jinja2.Environment(
 def jinja_temp(fn):
     return JINJA_ENVIRONMENT.get_template(fn)
 
-USERS_PARENT =  'users_parent'
-
-# valid user info
-import re
-
-USER_RE = re.compile(r"^[a-zA-Z0-9_-]{3,20}$")
-PASS_RE = re.compile("^.{3,20}$")
-EMAIL_RE = re.compile("^[\S]+@[\S]+\.[\S]+$")
-
-def valid_username(username):
-	return USER_RE.match(username)
-
-def query_user( username ):
-    key = ndb.Key( 'User', USERS_PARENT )
-    qry = User.query(User.name == username, ancestor=key)
-    try:
-        usr = qry.fetch(1)[0]
-        return usr
-    except IndexError:
-        return None
-
-def is_unused_username(username):
-    usr = query_user( username )
-    if usr == None:
-        return True
-    else:
-        return False
-
-def valid_password(p):
-	return PASS_RE.match(p)
-
-def valid_email(email):
-    if email:
-        return EMAIL_RE.match(email)
-    else:
-        return True
-
-# the user db
-import hmac
-import random
-import hashlib
-import string
-
-class User( ndb.Model ):
-    name = ndb.StringProperty()
-    pass_hash  = ndb.StringProperty()
-    salt = ndb.StringProperty()
-    email = ndb.StringProperty()
-
-def make_salt():
-    return ''.join(random.choice(string.letters) for x in xrange(5))
-
-def make_pw_hash(name, pw, salt):
-    return "%s" % hashlib.sha256( name + pw + salt).hexdigest()
-
-def user_parent_key():
-    """root of user entities"""
-    return ndb.Key( 'User', USERS_PARENT )
-
-def sign_up_user(usr_username, usr_password, usr_email):
-    u = User( parent = user_parent_key() )
-    u.name = usr_username
-    u.salt = make_salt()
-    u.pass_hash = make_pw_hash( usr_username, usr_password, u.salt)
-    u.email = usr_email
-
-    return u.put()
-
 # Handlers
 USER_COOKIE_NAME='usr'
 
 class UsrPageHandler(webapp2.RequestHandler):
     ''' read and write page with usr account form'''
+    usr_cookie = '' # 'usr' cookie string
+    coo_usr_name = ''
+    coo_usr_hash = ''
+
+    class current_usr:
+        name = ''
+        shash = ''
+        pass
+
+    def write_form(self, temp_name, arg={}):
+        arg_usr = {
+                "coo_usr_name": self.coo_usr_name,
+                "usr":self.current_usr
+                }
+        self.response.out.write( jinja_temp(temp_name).render(arg) )
+
+    def set_usr_cookie(self, uname, uhash):
+        self.response.headers.add_header('Set-Cookie',
+                str( '%s=%s|%s; Path=/' %(
+                    USER_COOKIE_NAME, uname, uhash)))
+                
+    def rm_usr_cookie(self):
+        self.response.headers.add_header('Set-Cookie',
+                str( '%s=; Path=/; Expires=Thu, 01-Jan-1970 00:00:00 GMT' %(USER_COOKIE_NAME)))
+
+    def get_usr_cookie(self):
+        name = ''
+        phash = ''
+        try:
+            self.usr_cookie = self.request.cookies[USER_COOKIE_NAME]
+            name = self.usr_cookie.split('|')[0]
+            phash = self.usr_cookie.split('|')[1]
+        except:
+            pass
+        return ( name, phash )
+
+    def get_current_user(self):
+        name, phash = self.get_usr_cookie()
+        if usr.check_user_hash( name, phash ):
+            self.current_usr.name = name
+            self.current_usr.shash = phash
+            return self.current_usr
+        else:
+            return None
+
+class SignUpHandler(UsrPageHandler):
     usr_name = ''
     err_name = ''
     usr_pw = '' # password
@@ -100,74 +81,25 @@ class UsrPageHandler(webapp2.RequestHandler):
     usr_email = ''
     err_email = ''
 
-    usr_cookie = '' # 'usr' cookie string
-    coo_usr_name = ''
-    coo_usr_hash = ''
+    signup_args = {
+            "username": usr_name,
+            "error_username": err_name,
+            "password": usr_pw,
+            "passverify": usr_pwv,
+            "error_password": err_pw,
+            "error_passverify": err_pwv,
+            "email": usr_email,
+            "error_email": err_email
+            }
 
-    class usr():
-        pass
-
-    def __init__(self, request, response):
-        webapp2.RequestHandler.__init__(self,request,response)
-        self.get_cookie_user()
-        self.usr.name = self.coo_usr_name
-
-    def get_usr_input(self):
+    def get_signup_input(self):
         self.usr_name = self.request.get("username")
         self.usr_pw = self.request.get("password")
         self.usr_pwv= self.request.get("verify")
         self.usr_email = self.request.get("email")
-        self.err_name = ''
-        self.err_pw = ''
-        self.err_pwv = ''
-        self.err_email = ''
 
-    def write_form(self, temp_name, arg={}):
-        arg_reg = {
-                "username": self.usr_name,
-                "error_username": self.err_name,
-                "password": self.usr_pw,
-                "passverify": self.usr_pwv,
-                "error_password": self.err_pw,
-                "error_passverify": self.err_pwv,
-                "email": self.usr_email,
-                "error_email": self.err_email
-                }
-        arg_usr = {
-                "coo_usr_name": self.coo_usr_name,
-                "usr":self.usr
-                }
-        self.response.out.write( jinja_temp(temp_name).render(
-            dict(arg_reg.items() + arg_usr.items() + arg.items())
-            ))
-
-    def set_cookie_user(self):
-        self.response.headers.add_header('Set-Cookie',
-                str( '%s=%s|%s; Path=/' %(
-                    USER_COOKIE_NAME, self.coo_usr_name,
-                    self.coo_usr_hash)))
-                
-    def rm_cookie_user(self):
-        self.response.headers.add_header('Set-Cookie',
-                str( '%s=; Path=/; Expires=Thu, 01-Jan-1970 00:00:00 GMT' %(USER_COOKIE_NAME)))
-
-    def get_cookie_user(self):
-        try:
-            self.usr_cookie = self.request.cookies[USER_COOKIE_NAME]
-            self.coo_usr_name = self.usr_cookie.split('|')[0]
-            self.coo_usr_hash = self.usr_cookie.split('|')[1]
-        except:
-            pass
-
-    def get_current_user(self):
-        self.get_cookie_user()
-        #if coo_usr_hash == safe_usr_hash
-        self.usr.name = self.coo_usr_name
-
-
-class SignUpHandler(UsrPageHandler):
     def post(self):
-        self.get_usr_input()
+        self.get_signup_input()
 
         if not valid_username(self.usr_name):
             self.err_name = "invalid user name"
@@ -188,49 +120,73 @@ class SignUpHandler(UsrPageHandler):
         if not valid_email(self.usr_email):
             self.err_email = "invalid email"
 
-        if not ( self.err_name + self.err_pw + self.err_pwv +
-                self.err_email == "" ):
-            self.write_form('signup.jinja2')
+        if not ( self.err_name + self.err_pw + self.err_pwv
+                + self.err_email == "" ):
+            self.write_form('signup.jinja2', signup_args)
         else:
-            user_key = sign_up_user( self.usr_name, self.usr_pw,
-                    self.usr_email)
-            self.coo_usr_name = self.usr_name
-            self.coo_usr_hash = user_key.get().pass_hash
-            self.set_cookie_user()
-            self.redirect("/wiki")
+            user_key = sign_up_user( self.usr_name,
+                    self.usr_pw, self.usr_email)
+            self.set_usr_cookie( self.usr_name,
+                    user_key.get().pass_hash)
+            # to current page
+            a = self.request.get('a')
+            if a:
+                self.redirect("%s" % a)
+            else:
+                self.redirect("/wiki")
 
     def get(self):
-        self.write_form('signup.jinja2')
+        self.write_form('signup.jinja2', signup_args)
 
 class LoginHandler(UsrPageHandler):
+    usr_name = ''
+    err_name = ''
+    usr_pw = '' # password
+    err_pw = ''
+
+    login_args = {
+            "username": usr_name,
+            "error_username": err_name,
+            "password": usr_pw,
+            "error_password": err_pw,
+            }
+
+    def get_login_input(self):
+        self.usr_name = self.request.get("username")
+        self.usr_pw = self.request.get("password")
+
     def post(self):
-        self.get_usr_input()
+        self.get_login_input()
 
-        usr = query_user(self.usr_name)
-        if not usr == None:
-            new_hash = make_pw_hash(self.usr_name, self.usr_pw, usr.salt)
-            if new_hash == usr.pass_hash:
-                self.coo_usr_name = self.usr_name
-                self.coo_usr_hash = new_hash
-                self.set_cookie_user()
-                # get current article from url
-                a = self.request.get('a')
-                self.redirect("%s" % a)
-
-            else:
-                self.err_pwv = 'wrong password'
-                self.write_form('login.jinja2')
-        else:
+        # check user name
+        if not usr.check_user_exist( self.usr_name ):
             self.err_name = 'no such user'
-            self.write_form('login.jinja2')
+            self.write_form('login.jinja2', login_args)
+            return
+
+        # check user pass
+        new_hash = usr.check_user_pass( self.usr_name, self.usr_pw)
+        if new_hash:
+            self.set_usr_cookie( self.usr_name, new_hash)
+            # get current article from url
+            a = self.request.get('a')
+            self.redirect("%s" % a)
+
+        else:
+            self.err_pwv = 'wrong password'
+            self.write_form('login.jinja2', login_args)
 
     def get(self):
         self.write_form('login.jinja2')
 
 class LogoutHandler(UsrPageHandler):
     def get(self):
-        self.rm_cookie_user()
-        self.redirect("./login")
+        self.rm_usr_cookie()
+        a = self.request.get('a')
+        if a :
+            self.redirect("%s" % a)
+        else:
+            self.redirect("/wiki" )
 
 # Wiki Article
 DEFAULT_WIKI_NAME = 'default_wiki'
@@ -254,47 +210,52 @@ def get_article_by_title( title = '' ):
 class WikiPage(UsrPageHandler):
     article = Article()
 
-    def __init__(self, request, response):
-        UsrPageHandler.__init__(self, request, response)
-
     def get(self, title):
-        # check usr
-        # query title
-        # render page
+        name, phash = self.get_usr_cookie()
+
         a = get_article_by_title( title )
         logging.info( 'Wikipage get() get_article_by_title %s: %s' % (title, a) )
         if a is None:
             a = Article()
             a.title = title
-        self.write_form('wiki.jinja2', {'article': a})
+        
+        self.write_form('wiki.jinja2', {'article': a, 'usrname': name})
 
 class EditPage(WikiPage):
     def get(self, title):
+        name, phash = self.get_usr_cookie()
+
+        if not usr.check_user_hash( name, phash ):
+            a = self.request.get('a')
+            self.redirect("/signup?a=%s" % a)
+            return
+
         logging.info('EditPage.get() title=%s' % str(title))
         a = get_article_by_title( title )
         if a is None:
             a = Article()
             a.title = title
         a.log()
-        self.write_form('wiki_edit.jinja2',{'article': a})
+
+        self.write_form('wiki_edit.jinja2', {'article': a, 'usrname': name})
 
     def post(self, title):
+        name, phash = self.get_usr_cookie()
+
+        if not usr.check_user_hash( name, phash ):
+            a = self.request.get('a')
+            self.redirect("/signup?a=%s" % a)
+            return
+
         a = get_article_by_title( title )
         if a is None:
             a = Article(parent=wiki_key())
         a.title = title
         a.content = self.request.get('content')
-        # check usr
-        # query article
-        # update article
-        # save article
         
         if a.title and a.content :
             a.put() 
-            url = '%s' % str( title )
-            logging.info( 'EditPage.post() redirect -> %s' % url )
-            self.redirect( url )
-            #PermPost.update_cache(post_id)
+            self.redirect( '%s' % title)
         else:
             self.write_form('wiki_edit.jinja2',{'article': self.article})
 
