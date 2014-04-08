@@ -156,11 +156,14 @@ class UsrPageHandler(webapp2.RequestHandler):
             self.usr_cookie = self.request.cookies[USER_COOKIE_NAME]
             self.coo_usr_name = self.usr_cookie.split('|')[0]
             self.coo_usr_hash = self.usr_cookie.split('|')[1]
-
-            #if coo_usr_hash == safe_usr_hash
-            self.usr.name = self.coo_usr_name
         except:
             pass
+
+    def get_current_user(self):
+        self.get_cookie_user()
+        #if coo_usr_hash == safe_usr_hash
+        self.usr.name = self.coo_usr_name
+
 
 class SignUpHandler(UsrPageHandler):
     def post(self):
@@ -210,7 +213,10 @@ class LoginHandler(UsrPageHandler):
                 self.coo_usr_name = self.usr_name
                 self.coo_usr_hash = new_hash
                 self.set_cookie_user()
-                self.redirect("/wiki")
+                # get current article from url
+                a = self.request.get('a')
+                self.redirect("%s" % a)
+
             else:
                 self.err_pwv = 'wrong password'
                 self.write_form('login.jinja2')

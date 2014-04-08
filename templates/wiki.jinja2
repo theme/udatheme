@@ -19,7 +19,7 @@
             {% if usr and usr.name  %}
                 {{usr.name}}( <a href="/logout">logout</a> )
             {% else %}
-                <a href="/login">login</a> | <a href="/signup">signup</a>
+            <a href="/login?a={{article.title}}">login</a> | <a href="/signup?a={{article.title}}">signup</a>
             {% endif %}
         </div>
     </head>
