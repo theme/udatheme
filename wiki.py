@@ -81,15 +81,16 @@ class SignUpHandler(UsrPageHandler):
     usr_email = ''
     err_email = ''
 
-    signup_args = {
-            "username": usr_name,
-            "error_username": err_name,
-            "password": usr_pw,
-            "passverify": usr_pwv,
-            "error_password": err_pw,
-            "error_passverify": err_pwv,
-            "email": usr_email,
-            "error_email": err_email
+    def signup_args(self):
+        return {
+            "username": self.usr_name,
+            "error_username": self.err_name,
+            "password": self.usr_pw,
+            "passverify": self.usr_pwv,
+            "error_password": self.err_pw,
+            "error_passverify": self.err_pwv,
+            "email": self.usr_email,
+            "error_email": self.err_email
             }
 
     def get_signup_input(self):
@@ -101,10 +102,10 @@ class SignUpHandler(UsrPageHandler):
     def post(self):
         self.get_signup_input()
 
-        if not valid_username(self.usr_name):
+        if not usr.valid_username(self.usr_name):
             self.err_name = "invalid user name"
 
-        if not is_unused_username(self.usr_name):
+        if not usr.is_unused_username(self.usr_name):
             self.err_name = "usr exist"
 
         if not self.usr_pw == self.usr_pwv:
@@ -112,23 +113,25 @@ class SignUpHandler(UsrPageHandler):
             self.usr_pw = ""
             self.usr_pwv = ""
 
-        elif not valid_password(self.usr_pw):
+        elif not usr.valid_password(self.usr_pw):
             self.err_pw = "invalid password"
             self.usr_pw = ""
             self.usr_pwv = ""
 
-        if not valid_email(self.usr_email):
+        if not usr.valid_email(self.usr_email):
             self.err_email = "invalid email"
 
         if not ( self.err_name + self.err_pw + self.err_pwv
                 + self.err_email == "" ):
-            self.write_form('signup.jinja2', signup_args)
+            self.write_form('signup.jinja2', self.signup_args())
+            logging.info( 'signup error' )
         else:
-            user_key = sign_up_user( self.usr_name,
+            user_key = usr.sign_up_user( self.usr_name,
                     self.usr_pw, self.usr_email)
             self.set_usr_cookie( self.usr_name,
                     user_key.get().pass_hash)
             # to current page
+            logging.info( 'signup ok, redirect' )
             a = self.request.get('a')
             if a:
                 self.redirect("%s" % a)
@@ -136,7 +139,7 @@ class SignUpHandler(UsrPageHandler):
                 self.redirect("/wiki")
 
     def get(self):
-        self.write_form('signup.jinja2', signup_args)
+        self.write_form('signup.jinja2', self.signup_args())
 
 class LoginHandler(UsrPageHandler):
     usr_name = ''
@@ -144,11 +147,12 @@ class LoginHandler(UsrPageHandler):
     usr_pw = '' # password
     err_pw = ''
 
-    login_args = {
-            "username": usr_name,
-            "error_username": err_name,
-            "password": usr_pw,
-            "error_password": err_pw,
+    def login_args(self):
+        return {
+            "username": self.usr_name,
+            "error_username": self.err_name,
+            "password": self.usr_pw,
+            "error_password": self.err_pw,
             }
 
     def get_login_input(self):
@@ -161,7 +165,7 @@ class LoginHandler(UsrPageHandler):
         # check user name
         if not usr.check_user_exist( self.usr_name ):
             self.err_name = 'no such user'
-            self.write_form('login.jinja2', login_args)
+            self.write_form('login.jinja2', login_args())
             return
 
         # check user pass
@@ -174,7 +178,7 @@ class LoginHandler(UsrPageHandler):
 
         else:
             self.err_pwv = 'wrong password'
-            self.write_form('login.jinja2', login_args)
+            self.write_form('login.jinja2', login_args())
 
     def get(self):
         self.write_form('login.jinja2')
