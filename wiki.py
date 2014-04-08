@@ -220,8 +220,10 @@ class WikiPage(UsrPageHandler):
         a = get_article_by_title( title )
         logging.info( 'Wikipage get() get_article_by_title %s: %s' % (title, a) )
         if a is None:
-            a = Article()
-            a.title = title
+            if name != '':
+                self.redirect( '/_edit%s' % title )
+            else:
+                self.redirect( '/login?a=%s' % title )
         
         self.write_form('wiki.jinja2', {'article': a, 'usrname': name})
 
