@@ -198,16 +198,27 @@ DEFAULT_WIKI_NAME = 'default_wiki'
 class Article(ndb.Model):
     title = ndb.StringProperty()
     content = ndb.StringProperty( indexed=False )
+    created = ndb.DateTimeProperty(auto_now_add=True)
     def log(self):
         logging.info('%s, %s' % ( self.title, self.content ) )
 
 def wiki_key( wiki_name = DEFAULT_WIKI_NAME ):
     return ndb.Key('Wiki', wiki_name)
 
-def get_article_by_title( title = '' ):
+def get_history( title = '' ):
+    qry = Article.query( Article.title == title, ancestor=wiki_key()).order(-cls.date)
+    return  qry.fetch()
+
+def get_article( title = '' , versin = 1):
     try:
-        qry = Article.query( Article.title == title, ancestor=wiki_key())
-        return qry.fetch(1)[0]
+        articles = get_history( title )
+        l = len( articles )
+        return None if l == 0
+
+        if 1 <= version and version <= l:
+            return articles[ l - version ]
+        else:
+            return None
     except:
         return None
  
@@ -217,8 +228,8 @@ class WikiPage(UsrPageHandler):
     def get(self, title):
         name, phash = self.get_usr_cookie()
 
-        a = get_article_by_title( title )
-        logging.info( 'Wikipage get() get_article_by_title %s: %s' % (title, a) )
+        a = get_article( title )
+        logging.info( 'Wikipage get() get_article %s: %s' % (title, a) )
         if a is None:
             if name != '':
                 self.redirect( '/_edit%s' % title )
@@ -229,7 +240,12 @@ class WikiPage(UsrPageHandler):
 
 class HistoryPage(WikiPage):
     def get(self, title):
-        self.response.write('GET: %s history page' % title)
+        his= get_history( title )
+        s = ''
+        for i in his:
+            s += '%s, %s, %s <br> ' % ( i.created, i.title, i.content )
+
+        self.response.write('historys: <br> %s ' % s)
 
     def post(self, title):
         self.response.write('POST: %s history page' % title)
@@ -244,7 +260,7 @@ class EditPage(WikiPage):
             return
 
         logging.info('EditPage.get() title=%s' % str(title))
-        a = get_article_by_title( title )
+        a = get_article( title )
         if a is None:
             a = Article()
             a.title = title
@@ -260,7 +276,7 @@ class EditPage(WikiPage):
             self.redirect("/signup?a=%s" % a)
             return
 
-        a = get_article_by_title( title )
+        a = get_article( title )
         if a is None:
             a = Article(parent=wiki_key())
         a.title = title
