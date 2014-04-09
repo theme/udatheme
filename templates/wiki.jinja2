@@ -15,7 +15,8 @@
             {% if usrname %}
                 <a href="/_edit{{article.title}}">edit</a> |
             {% endif %}
-                history
+                <a href="/_history{{article.title}}">history</a>
+                
 
             {% if usrname  %}
                 {{usrname}}( <a href="/logout">logout</a> )
