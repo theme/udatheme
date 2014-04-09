@@ -165,7 +165,7 @@ class LoginHandler(UsrPageHandler):
         # check user name
         if not usr.check_user_exist( self.usr_name ):
             self.err_name = 'no such user'
-            self.write_form('login.jinja2', login_args())
+            self.write_form('login.jinja2', self.login_args())
             return
 
         # check user pass
@@ -199,6 +199,7 @@ class Article(ndb.Model):
     title = ndb.StringProperty()
     content = ndb.StringProperty( indexed=False )
     created = ndb.DateTimeProperty(auto_now_add=True)
+
     def log(self):
         logging.info('%s, %s' % ( self.title, self.content ) )
 
@@ -206,17 +207,20 @@ def wiki_key( wiki_name = DEFAULT_WIKI_NAME ):
     return ndb.Key('Wiki', wiki_name)
 
 def get_history( title = '' ):
-    qry = Article.query( Article.title == title, ancestor=wiki_key()).order(-cls.date)
+    logging.info( ' get_history( %s)' % title )
+    qry = Article.query( Article.title == title, ancestor=wiki_key()).order(Article.created)
     return  qry.fetch()
 
-def get_article( title = '' , versin = 1):
+def get_article( title = '' , version = 0):
+    logging.info( ' get_article( %s, %s)' % (title, str(version) ))
     try:
         articles = get_history( title )
-        l = len( articles )
-        return None if l == 0
-
-        if 1 <= version and version <= l:
-            return articles[ l - version ]
+        n = len( articles )
+        if n > 0:
+            if 0 == version: # latest
+                return articles[ n - 1 ]
+            if 1 <= version and version <= n:
+                return articles[ version -1 ]
         else:
             return None
     except:
@@ -225,18 +229,26 @@ def get_article( title = '' , versin = 1):
 class WikiPage(UsrPageHandler):
     article = Article()
 
+    def get_version(self):
+        v = self.request.get('v')
+        if v.isdigit():
+            v = int( v )
+        else:
+            v = 1
+
     def get(self, title):
+        logging.info( 'WikiPage get() %s' % title )
         name, phash = self.get_usr_cookie()
 
         a = get_article( title )
-        logging.info( 'Wikipage get() get_article %s: %s' % (title, a) )
+        logging.info( 'WikiPage get() a=%s' % a)
         if a is None:
             if name != '':
                 self.redirect( '/_edit%s' % title )
             else:
                 self.redirect( '/login?a=%s' % title )
-        
-        self.write_form('wiki.jinja2', {'article': a, 'usrname': name})
+        else:
+            self.write_form('wiki.jinja2', {'article': a, 'usrname': name})
 
 class HistoryPage(WikiPage):
     def get(self, title):
@@ -252,15 +264,18 @@ class HistoryPage(WikiPage):
 
 class EditPage(WikiPage):
     def get(self, title):
+        logging.info( 'EditPage get() %s' % title )
         name, phash = self.get_usr_cookie()
 
+        # is user signed in ?
         if not usr.check_user_hash( name, phash ):
             a = self.request.get('a')
             self.redirect("/signup?a=%s" % a)
             return
 
-        logging.info('EditPage.get() title=%s' % str(title))
-        a = get_article( title )
+        # render article
+        v = self.get_version()
+        a = get_article( title , v)
         if a is None:
             a = Article()
             a.title = title
@@ -271,14 +286,18 @@ class EditPage(WikiPage):
     def post(self, title):
         name, phash = self.get_usr_cookie()
 
+        # is usr signed in?
         if not usr.check_user_hash( name, phash ):
             a = self.request.get('a')
             self.redirect("/signup?a=%s" % a)
             return
 
-        a = get_article( title )
-        if a is None:
-            a = Article(parent=wiki_key())
+        # save article
+        v = self.get_version()
+        a = get_article( title ) #TODO, retun a,v, to save v in Article db, not needed ?
+
+        # always save new record
+        a = Article(parent=wiki_key())
         a.title = title
         a.content = self.request.get('content')
         
