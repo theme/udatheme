@@ -227,6 +227,13 @@ class WikiPage(UsrPageHandler):
         
         self.write_form('wiki.jinja2', {'article': a, 'usrname': name})
 
+class HistoryPage(WikiPage):
+    def get(self, title):
+        self.response.write('GET: %s history page' % title)
+
+    def post(self, title):
+        self.response.write('POST: %s history page' % title)
+
 class EditPage(WikiPage):
     def get(self, title):
         name, phash = self.get_usr_cookie()
@@ -270,6 +277,7 @@ app = webapp2.WSGIApplication([('/signup', SignUpHandler),
     ('/login', LoginHandler),
     ('/logout', LogoutHandler),
     ('/_edit' + PAGE_RE, EditPage),
+    ('/_history' + PAGE_RE, HistoryPage),
     (PAGE_RE, WikiPage),
     ],
     debug=True)
