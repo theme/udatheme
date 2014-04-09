@@ -234,19 +234,20 @@ class WikiPage(UsrPageHandler):
         if v.isdigit():
             v = int( v )
         else:
-            v = 1
+            v = 0
+        return v
 
     def get(self, title):
         logging.info( 'WikiPage get() %s' % title )
         name, phash = self.get_usr_cookie()
 
-        a = get_article( title )
-        logging.info( 'WikiPage get() a=%s' % a)
+        v = self.get_version()
+        a = get_article( title, v )
         if a is None:
             if name != '':
-                self.redirect( '/_edit%s' % title )
+                self.redirect( '/_edit%s?v=%s' % (title,v) )
             else:
-                self.redirect( '/login?a=%s' % title )
+                self.redirect( '/login?a=%s&v=%s' % (title,v) )
         else:
             self.write_form('wiki.jinja2', {'article': a, 'usrname': name})
 
