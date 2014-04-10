@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+    <title>
+        wiki_history -
+        {% block title %}
+            {{article.title}}
+        {% endblock title %}
+    </title>
+    <head>
+        <link rel="stylesheet" type="text/css" href="/css/index.css">
+
+        <div id="ops_bar" style="align:right">
+            <!-- edit | history         usrname( logout ) -->
+            <!-- history        longin | signup -->
+            {% if usrname %}
+                <a href="/_edit{{article.title}}">edit</a> |
+            {% endif %}
+
+            {% if usrname  %}
+                {{usrname}}( <a href="/logout">logout</a> )
+            {% else %}
+            <a href="/login?a={{article.title}}">login</a> | <a href="/signup?a={{article.title}}">signup</a>
+            {% endif %}
+        </div>
+    </head>
+
+    <body>
+        {% block history %}
+
+        <ul>
+            {% for a in history %}
+            <li class="history">
+                {{a.created}} {{a.title}} {{a.content | truncate(15)}}
+                <div class="right-edit-view">
+                <a href="/_edit{{ a.title }}&v={{loop.index}}">edit</a>
+                <a href="{{ a.title }}&v={{loop.index}}">view</a>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% endblock history  %}
+    </body>
+</html>
+

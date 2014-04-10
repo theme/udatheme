@@ -254,11 +254,9 @@ class WikiPage(UsrPageHandler):
 class HistoryPage(WikiPage):
     def get(self, title):
         his= get_history( title )
-        s = ''
-        for i in his:
-            s += '%s, %s, %s <br> ' % ( i.created, i.title, i.content )
-
-        self.response.write('historys: <br> %s ' % s)
+        a = get_article( title )
+        name, phash = self.get_usr_cookie()
+        self.write_form('wiki_history.jinja2', {'article': a, 'history': his, 'usrname': name})
 
     def post(self, title):
         self.response.write('POST: %s history page' % title)

@@ -18,6 +18,19 @@ h1{
     text-align: center;
 }
 
+/* wiki history */
+li:nth-child(odd) {
+    background-color: #eee;
+}
+
+li.history {
+    font-size: 20px;
+}
+
+div.right-edit-view {
+    float: right;
+}
+
 .post-title {
     font-size: 24px;
     font-weight: bold;
