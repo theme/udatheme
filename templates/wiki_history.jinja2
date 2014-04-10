@@ -32,8 +32,8 @@
             <li class="history">
                 {{a.created}} {{a.title}} {{a.content | truncate(15)}}
                 <div class="right-edit-view">
-                <a href="/_edit{{ a.title }}&v={{loop.index}}">edit</a>
-                <a href="{{ a.title }}&v={{loop.index}}">view</a>
+                <a href="/_edit{{ a.title }}?v={{loop.index}}">edit</a>
+                <a href="{{ a.title }}?v={{loop.index}}">view</a>
                 </div>
             </li>
             {% endfor %}
