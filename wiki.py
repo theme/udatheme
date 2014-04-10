@@ -10,6 +10,8 @@ import jinja2
 import webapp2
 from webapp2_extras import routes
 
+from time import strftime
+
 # module
 import usr
 
@@ -17,6 +19,10 @@ JINJA_ENVIRONMENT = jinja2.Environment(
         loader=jinja2.FileSystemLoader(os.path.join( os.path.dirname(__file__), 'templates')),
         extensions=['jinja2.ext.autoescape'],
         autoescape=True)
+def history_ftime(value, fmt='%a, %d %b %Y %H:%M:%S'):
+    return value.strftime( fmt )
+
+JINJA_ENVIRONMENT.filters['history_ftime'] = history_ftime
 
 def jinja_temp(fn):
     return JINJA_ENVIRONMENT.get_template(fn)
@@ -293,7 +299,7 @@ class EditPage(WikiPage):
 
         # save article
         v = self.get_version()
-        a = get_article( title ) #TODO, retun a,v, to save v in Article db, not needed ?
+        a = get_article( title )
 
         # always save new record
         a = Article(parent=wiki_key())
