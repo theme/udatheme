@@ -262,6 +262,8 @@ class HistoryPage(WikiPage):
         his= get_history( title )
         a = get_article( title )
         name, phash = self.get_usr_cookie()
+
+        his.reverse()
         self.write_form('wiki_history.jinja2', {'article': a, 'history': his, 'usrname': name})
 
     def post(self, title):
