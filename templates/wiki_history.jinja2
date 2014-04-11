@@ -30,7 +30,7 @@
         <ul>
             {% for a in history %}
             <li class="history">
-                {{ a.created | history_ftime }} {{a.title}} {{a.content | truncate(15)}}
+                {{ a.created | history_ftime }} {{a.title}} {{a.content}}
                 <div class="right-edit-view">
                 <a href="/_edit{{ a.title }}?v={{loop.revindex}}">edit</a>
                 <a href="{{ a.title }}?v={{loop.revindex}}">view</a>
